@@ -1,4 +1,5 @@
 ﻿using Parcial1Ap1_JoseG.BLL;
+using Parcial1Ap1_JoseG.DAL;
 using Parcial1Ap1_JoseG.Entidades;
 using SistemaGonzalez;
 using System;
@@ -24,8 +25,23 @@ namespace Parcial1Ap1_JoseG.UI.Registros
 
         private void Idbutton_Click(object sender, EventArgs e)
         {
-            if (validarId("Favor ingresar el id del empleado") && ValidarBuscar())
-                LlenarUsuario(EmpleadosBll.Buscar(u.String(IdtextBox.Text)));
+            int id = int.Parse(IdtextBox.Text);
+            Empleados empleado;
+            using (var db = new BLL.Repositorio<Empleados>())
+            {
+                empleado = db.Buscar(p => p.EmpleadoId == id);
+                
+                if(empleado != null)
+                {
+                    NombretextBox.Text = empleado.Nombres;
+                    SueldotextBox.Text = empleado.Sueldo.ToString();
+                    FechaIngresodateTimePicker.Value = empleado.FechaNacimiento;
+                }
+                else
+                {
+                    MessageBox.Show("No existe el empleado");
+                }
+            }
         }
 
         private void LlenarUsuario(Empleados emp)
@@ -50,26 +66,37 @@ namespace Parcial1Ap1_JoseG.UI.Registros
 
         private void Guardarbutton_Click(object sender, EventArgs e)
         {
-            Empleados empleado = new Empleados();
-            LlenarClase(empleado);
-            if (ValidTextB() && ValidarExistente(NombretextBox.Text))
+            var pas = new Empleados();
+            pas.Nombres = NombretextBox.Text;
+            pas.FechaNacimiento = FechaIngresodateTimePicker.Value;
+            pas.Sueldo = Convert.ToInt32(SueldotextBox.Text);
+            if (RepositorioBLL.Guardar(pas))
             {
-                EmpleadosBll.Guardar(empleado);
-                MessageBox.Show("Guardado con exito!!!!");
+                MessageBox.Show("Guardado con exito");
+            }
+            else if (ValidTextB())
+            {
+                MessageBox.Show("Por favor rellenar campos");
             }
         }
 
-        public void LlenarClase(Empleados e)
-        {
-            e.Nombres = NombretextBox.Text;
-            e.FechaNacimiento = FechaIngresodateTimePicker.Value;
-            e.Sueldo = Convert.ToInt32(SueldotextBox.Text);
-        }
+        
 
         private void Eliminarbutton_Click(object sender, EventArgs e)
-        {
-                EmpleadosBll.Eliminar(u.String(IdtextBox.Text));
-                MessageBox.Show("Empleado Eliminado");              
+        {      
+            int id = int.Parse(IdtextBox.Text);
+            using (var db = new BLL.Repositorio<Empleados>())
+            { 
+                if (db.Eliminar(db.Buscar(p => p.EmpleadoId == id)))
+                {
+                    MessageBox.Show("Empleado eliminado");
+                    Limpiar();
+                }
+                else
+                {
+                    MessageBox.Show("No se pudo eliminar");
+                }
+            }
         }
 
         public bool ValidTextB()
@@ -89,43 +116,6 @@ namespace Parcial1Ap1_JoseG.UI.Registros
             {
                 NombreerrorProvider.Clear();
                 SueldoerrorProvider.SetError(SueldotextBox, "Ingrese el sueldo");
-                return false;
-            }
-            return true;
-        }
-
-        private bool ValidarExistente(string aux)
-        {
-            if (EmpleadosBll.GetListaNombreEmpleado(aux).Count() > 0)
-            {
-                MessageBox.Show("Este empleado existe....");
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        private bool validarId(string message)
-        {
-            if (string.IsNullOrEmpty(IdtextBox.Text))
-            {
-                IderrorProvider.SetError(IdtextBox, "Ingresar el ID");
-                MessageBox.Show(message);
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        private bool ValidarBuscar()
-        {
-            if (EmpleadosBll.Buscar(u.String(IdtextBox.Text)) == null)
-            {
-                MessageBox.Show("Este Empleado no existe");
                 return false;
             }
             return true;
